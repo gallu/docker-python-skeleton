@@ -38,15 +38,43 @@ Python の Web アプリケーションをローカルで開発するための D
 
 ## 初期セットアップ
 
+### ZIP で取得する場合
+
+GitHub に新規リポジトリを作らず、手元に開発環境を用意する方法です。以下は Linux / WSL のホスト側シェルで実行し、`curl` と `unzip` が必要です。`my-python-app` は任意のプロジェクト名に変更できます。ZIP ファイルや展開先、変更後のディレクトリが既にある場合は、別名または別の作業ディレクトリを使用してください。
+
+```bash
+# ZIP をダウンロードして展開
+curl -fL -o docker-python-skeleton.zip \
+  https://github.com/gallu/docker-python-skeleton/archive/refs/heads/main.zip
+unzip docker-python-skeleton.zip
+
+# 作業するディレクトリへ移動
+mv docker-python-skeleton-main my-python-app
+cd my-python-app
+```
+
+取得後は下記の「取得後の初期化とアプリ配置」に進みます。不要になった ZIP は `../docker-python-skeleton.zip` です。非公開リポジトリの ZIP は匿名では取得できません。ZIP には Git 履歴が含まれないため、Git で管理する場合は必要に応じて `git init` してください。`src/` と `.env` は既定で Git 管理対象外です。
+
+### GitHub Template から作成する場合
+
+GitHub 上でこのリポジトリに「Use this template」が表示される場合は、そこから新しいリポジトリを作成し、ホスト側へ clone してください。表示されない場合は ZIP で取得するか、通常の clone を使用してください。clone 後は新しいリポジトリのルートへ移動します。
+
+### 取得後の初期化とアプリ配置
+
 以下はリポジトリのルートで、ホスト側のシェルから実行します。
 
 ```bash
 sh scripts/setup.sh
 cp .env.sample .env
-make up
 ```
 
-既に `.env` がある場合は `cp` で上書きしないでください。`.env` の `WEB_PORT` はホストの公開ポートで、既定は `8081` です。`COMPOSE_PROJECT_NAME` を指定すると Compose のコンテナ・ネットワーク・volume 名の接頭辞を変更できます。サービスには固定の `container_name` を付けていません。
+`.env` の作成は省略できます。既に `.env` がある場合は `cp` で上書きせず、内容を確認してください。`setup.sh` は空の `src/` にサンプルの `src/app.py` を配置します。独自のアプリを使う場合は、セットアップ前に `src/` へ置くとサンプルのコピーを省略できます。セットアップ済みの場合は、`src/app.py` を編集するか、アプリを配置して `WSGI_APP` を起動対象に合わせてください。
+
+起動するには、ホスト側で次を実行します。
+
+```bash
+make up
+```
 
 `make up` は nginx、Python、Redis、MySQL、PostgreSQL を起動します。DB を片方だけ使う場合は以下のいずれかを実行します。
 
@@ -56,6 +84,18 @@ make up-pg
 ```
 
 `up-mysql` と `up-pg` は、使わない方の DB コンテナを停止します。Redis はどの起動方法でも立ち上がります。DB は Compose profiles で選択するため、`docker compose up` だけでは起動しません。Python コンテナは有効な DB が healthy になるまで待ちます。
+
+## 設定
+
+`.env` は省略できます。Compose は未設定または空文字の変数に下表の既定値を適用します。ホスト側の環境変数を設定した場合は `.env` より優先されます。
+
+| 変数 | 既定値 | 役割 |
+|---|---|---|
+| `WEB_PORT` | `8081` | ホスト側の nginx 公開ポート |
+| `WSGI_APP` | `app:application` | Gunicorn が読み込む `module:callable` 形式の WSGI アプリ |
+| `COMPOSE_PROJECT_NAME` | Compose が決定 | コンテナ・ネットワーク・volume 名に使うプロジェクト名 |
+
+例えば `vi .env` で `WEB_PORT=9081` に変更すると、ブラウザからの接続先は `http://localhost:9081/` になります。`WSGI_APP` のモジュールは `src/` 内に置いてください。`COMPOSE_PROJECT_NAME` を指定する場合は、他の Compose プロジェクトと重複しない名前にしてください。サービスに固定の `container_name` は設定していません。
 
 ## ブラウザ・curl での動作確認
 
