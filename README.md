@@ -83,7 +83,7 @@ make up-mysql
 make up-pg
 ```
 
-`up-mysql` と `up-pg` は、使わない方の DB コンテナを停止します。Redis はどの起動方法でも立ち上がります。DB は Compose profiles で選択するため、`docker compose up` だけでは起動しません。Python コンテナは有効な DB が healthy になるまで待ちます。
+`up-mysql` と `up-pg` は、使わない方の DB コンテナを停止状態で保持し、削除しません。停止対象のコンテナがない初回起動でも実行できます。切り替え時も両 DB の named volume のデータは残ります。Redis はどの起動方法でも立ち上がります。DB は Compose profiles で選択するため、`docker compose up` だけでは起動しません。Python コンテナは有効な DB が healthy になるまで待ちます。
 
 ## 設定
 
@@ -96,6 +96,8 @@ make up-pg
 | `COMPOSE_PROJECT_NAME` | Compose が決定 | コンテナ・ネットワーク・volume 名に使うプロジェクト名 |
 
 例えば `vi .env` で `WEB_PORT=9081` に変更すると、ブラウザからの接続先は `http://localhost:9081/` になります。`WSGI_APP` のモジュールは `src/` 内に置いてください。`COMPOSE_PROJECT_NAME` を指定する場合は、他の Compose プロジェクトと重複しない名前にしてください。サービスに固定の `container_name` は設定していません。
+
+nginx のポートは既定で `127.0.0.1:<WEB_PORT>` にバインドされ、ホスト自身からのみアクセスできます。外部からアクセスさせる場合は、`vi docker-compose.yml` で nginx の `ports` にある `127.0.0.1:` から始まる行をコメントアウトし、直下の全インターフェース公開用の行を有効にしてから再起動してください。両方の行を同時に有効にしないでください。外部公開時は、Docker のポート公開がホストのファイアウォール設定に与える影響を確認し、アクセス元を制限してください。この構成は開発用であり、そのまま本番公開することは推奨しません。
 
 ## ブラウザ・curl での動作確認
 
